@@ -16,20 +16,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Fix Docker socket permissions
+                    // Set Docker socket permissions directly
                     sh '''
-                        sudo chown root:docker /var/run/docker.sock || true
-                        sudo chmod 666 /var/run/docker.sock || true
-                        sudo usermod -aG docker jenkins || true
-                        newgrp docker || true
-                    '''
-                    
-                    // Build with error handling
-                    sh '''
-                        if ! docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .; then
-                            echo "Docker build failed. Retrying with sudo..."
-                            sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                        fi
+                        chmod 666 /var/run/docker.sock || true
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                     '''
                 }
             }
@@ -44,7 +34,6 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    sh 'sudo chmod 666 /var/run/docker.sock || true'
                     docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
                         docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
                     }
@@ -55,13 +44,11 @@ pipeline {
         stage('Deploy Golang to DEV') {
             steps {
                 script {
-                    sh 'sudo chmod 666 /var/run/docker.sock || true'
-                    
                     sh '''
-                        sudo docker image pull ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        sudo docker rm -f server-golang || true
-                        sudo docker network create dev || true
-                        sudo docker container run -d --rm --name server-golang -p 4001:4001 --network dev ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker image pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker rm -f server-golang || true
+                        docker network create dev || true
+                        docker container run -d --rm --name server-golang -p 4001:4001 --network dev ${DOCKER_IMAGE}:${DOCKER_TAG}
                     '''
                 }
             }
