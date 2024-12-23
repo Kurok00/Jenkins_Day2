@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'master', url: 'https://github.com/trongpham99-cpu/golang-jenkins.git'
+                git branch: 'master', url: 'https://github.com/Kurok00/Jenkins_Day2.git'
             }
         }
 
@@ -40,12 +40,12 @@ pipeline {
         stage('Deploy Golang to DEV') {
             steps {
                 echo 'Deploying to DEV...'
-                sh 'docker image pull trongpham99/golang-jenkins:latest'
-                sh 'docker container stop golang-jenkins || echo "this container does not exist"'
+                sh 'docker image pull anvnt96/golang-jenkins-day2'
+                sh 'docker container stop golang-jenkins-day2 || echo "this container does not exist"'
                 sh 'docker network create dev || echo "this network exists"'
                 sh 'echo y | docker container prune '
 
-                sh 'docker container run -d --rm --name server-golang -p 4000:3000 --network dev trongpham99/golang-jenkins:latest'
+                sh 'docker container run -d --rm --name server-golang -p 4001:4001 --network dev anvnt96/golang-jenkins-day2'
             }
         }
     }
