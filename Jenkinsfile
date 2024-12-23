@@ -4,8 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'anvnt96/golang-jenkins'
         DOCKER_TAG = 'latest'
-        TELEGRAM_BOT_TOKEN = credentials('telegram-bot-token')
-        TELEGRAM_CHAT_ID = credentials('telegram-chat-id')
+        TELEGRAM_TOKEN = credentials('telegram-bot-token')
+        TELEGRAM_CHAT = credentials('telegram-chat-id')
     }
 
     stages {
@@ -67,29 +67,32 @@ pipeline {
 
     post {
         success {
-            script {
-                def message = "✅ Build SUCCESS!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
-                sh """
-                    curl -s -X POST https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage \
-                    -d chat_id=${TELEGRAM_CHAT_ID} \
-                    -d parse_mode=HTML \
-                    -d text="${message}"
-                """
+            node {
+                script {
+                    def message = "✅ Build SUCCESS!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
+                    sh """
+                        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+                        -d chat_id=${TELEGRAM_CHAT} \
+                        -d parse_mode=HTML \
+                        -d text="${message}"
+                    """
+                }
+                cleanWs()
             }
         }
         failure {
-            script {
-                def message = "❌ Build FAILED!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
-                sh """
-                    curl -s -X POST https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage \
-                    -d chat_id=${TELEGRAM_CHAT_ID} \
-                    -d parse_mode=HTML \
-                    -d text="${message}"
-                """
+            node {
+                script {
+                    def message = "❌ Build FAILED!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
+                    sh """
+                        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+                        -d chat_id=${TELEGRAM_CHAT} \
+                        -d parse_mode=HTML \
+                        -d text="${message}"
+                    """
+                }
+                cleanWs()
             }
-        }
-        always {
-            cleanWs()
         }
     }
 }
