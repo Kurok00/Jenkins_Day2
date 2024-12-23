@@ -41,7 +41,19 @@ pipeline {
             steps {
                 echo 'Deploying to DEV...'
                 sh 'docker image pull anvnt96/golang-jenkins:latest'
-                sh 'docker container stop golang-jenkins || echo "this container does not exist"'
+                
+                // Check if container exists and is running
+                sh '''
+                    CONTAINER_ID=$(docker ps -q -f name=server-golang)
+                    if [ ! -z "$CONTAINER_ID" ]; then
+                        echo "Container is running, stopping it..."
+                        docker stop $CONTAINER_ID
+                    fi
+                    
+                    # Remove container if it exists but not running
+                    docker rm -f server-golang || true
+                '''
+                
                 sh 'docker network create dev || echo "this network exists"'
                 sh 'echo y | docker container prune '
 
