@@ -76,7 +76,6 @@ pipeline {
                     -d text="${message}"
                 """
             }
-            cleanWs()
         }
         failure {
             script {
@@ -88,9 +87,9 @@ pipeline {
                     -d text="${message}"
                 """
             }
-            cleanWs()
         }
         always {
+            cleanWs()
         }
     }
 }
