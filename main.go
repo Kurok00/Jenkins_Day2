@@ -25,4 +25,8 @@ func main() {
 	if err := r.Run(":4000"); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
+	log.Println("Server is running at http://localhost:4000")
 }
+
+// token tele : 7801299262:AAFTUsvVxL59EzZHQfAcdLYOgb4kK5B42Fg
+// id : 6894773989
