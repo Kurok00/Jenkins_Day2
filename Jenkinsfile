@@ -67,7 +67,7 @@ pipeline {
 
     post {
         success {
-            node {
+            node('built-in') {  // Add label 'built-in' for the default Jenkins node
                 script {
                     def message = "✅ Build SUCCESS!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
                     sh """
@@ -81,7 +81,7 @@ pipeline {
             }
         }
         failure {
-            node {
+            node('built-in') {  // Add label 'built-in' for the default Jenkins node
                 script {
                     def message = "❌ Build FAILED!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
                     sh """
