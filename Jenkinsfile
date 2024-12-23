@@ -16,7 +16,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'sudo chmod 666 /var/run/docker.sock'
+                    sh 'chmod 666 /var/run/docker.sock || true'
                     docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
                 }
             }
@@ -41,24 +41,24 @@ pipeline {
         stage('Deploy Golang to DEV') {
             steps {
                 echo 'Deploying to DEV...'
-                sh 'sudo docker image pull anvnt96/golang-jenkins:latest'
+                sh 'docker image pull anvnt96/golang-jenkins:latest'
                 
                 // Check if container exists and is running
                 sh '''
-                    CONTAINER_ID=$(sudo docker ps -q -f name=server-golang)
+                    CONTAINER_ID=$(docker ps -q -f name=server-golang)
                     if [ ! -z "$CONTAINER_ID" ]; then
                         echo "Container is running, stopping it..."
-                        sudo docker stop $CONTAINER_ID
+                        docker stop $CONTAINER_ID
                     fi
                     
                     # Remove container if it exists but not running
-                    sudo docker rm -f server-golang || true
+                    docker rm -f server-golang || true
                 '''
                 
-                sh 'sudo docker network create dev || echo "this network exists"'
-                sh 'sudo echo y | docker container prune '
+                sh 'docker network create dev || echo "this network exists"'
+                sh 'echo y | docker container prune '
 
-                sh 'sudo docker container run -d --rm --name server-golang -p 4001:4001 --network dev anvnt96/golang-jenkins:latest'
+                sh 'docker container run -d --rm --name server-golang -p 4001:4001 --network dev anvnt96/golang-jenkins:latest'
             }
         }
     }
@@ -68,11 +68,11 @@ pipeline {
             node('built-in') {
                 script {
                     withCredentials([
-                        string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN'),
-                        string(credentialsId: 'telegram-chat-id', variable: 'TELEGRAM_CHAT')
+                        string(credentialsId: 'telegram-token', variable: 'TELEGRAM_TOKEN'),
+                        string(credentialsId: 'telegram-chatid', variable: 'TELEGRAM_CHAT')
                     ]) {
                         def message = "✅ Build SUCCESS!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
-                        sh """
+                        sh """#!/bin/bash
                             curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
                             -d chat_id=${TELEGRAM_CHAT} \
                             -d parse_mode=HTML \
@@ -87,11 +87,11 @@ pipeline {
             node('built-in') {
                 script {
                     withCredentials([
-                        string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN'),
-                        string(credentialsId: 'telegram-chat-id', variable: 'TELEGRAM_CHAT')
+                        string(credentialsId: 'telegram-token', variable: 'TELEGRAM_TOKEN'),
+                        string(credentialsId: 'telegram-chatid', variable: 'TELEGRAM_CHAT')
                     ]) {
                         def message = "❌ Build FAILED!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
-                        sh """
+                        sh """#!/bin/bash
                             curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
                             -d chat_id=${TELEGRAM_CHAT} \
                             -d parse_mode=HTML \
@@ -104,3 +104,6 @@ pipeline {
         }
     }
 }
+
+// token tele : 7801299262:AAFTUsvVxL59EzZHQfAcdLYOgb4kK5B42Fg
+// id : 6894773989
