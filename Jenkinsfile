@@ -5,16 +5,28 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the code from the repository
-                git 'https://your-repository-url.git'
+                git 'https://github.com/Kurok00/Jenkins_Day2.git'
             }
         }
         stage('Build') {
+            agent {
+                docker {
+                    image 'golang:1.23.3-alpine'
+                    args '-v /var/jenkins_home/go:/go'
+                }
+            }
             steps {
                 // Build the Go application
                 sh 'go build -o main .'
             }
         }
         stage('Test') {
+            agent {
+                docker {
+                    image 'golang:1.23.3-alpine'
+                    args '-v /var/jenkins_home/go:/go'
+                }
+            }
             steps {
                 // Run tests
                 sh 'go test ./...'
