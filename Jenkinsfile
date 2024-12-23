@@ -16,8 +16,21 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'chmod 666 /var/run/docker.sock || true'
-                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                    // Fix Docker socket permissions
+                    sh '''
+                        sudo chown root:docker /var/run/docker.sock || true
+                        sudo chmod 666 /var/run/docker.sock || true
+                        sudo usermod -aG docker jenkins || true
+                        newgrp docker || true
+                    '''
+                    
+                    // Build with error handling
+                    sh '''
+                        if ! docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .; then
+                            echo "Docker build failed. Retrying with sudo..."
+                            sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        fi
+                    '''
                 }
             }
         }
@@ -31,6 +44,7 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
+                    sh 'sudo chmod 666 /var/run/docker.sock || true'
                     docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
                         docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
                     }
@@ -40,25 +54,16 @@ pipeline {
 
         stage('Deploy Golang to DEV') {
             steps {
-                echo 'Deploying to DEV...'
-                sh 'docker image pull anvnt96/golang-jenkins:latest'
-                
-                // Check if container exists and is running
-                sh '''
-                    CONTAINER_ID=$(docker ps -q -f name=server-golang)
-                    if [ ! -z "$CONTAINER_ID" ]; then
-                        echo "Container is running, stopping it..."
-                        docker stop $CONTAINER_ID
-                    fi
+                script {
+                    sh 'sudo chmod 666 /var/run/docker.sock || true'
                     
-                    # Remove container if it exists but not running
-                    docker rm -f server-golang || true
-                '''
-                
-                sh 'docker network create dev || echo "this network exists"'
-                sh 'echo y | docker container prune '
-
-                sh 'docker container run -d --rm --name server-golang -p 4001:4001 --network dev anvnt96/golang-jenkins:latest'
+                    sh '''
+                        sudo docker image pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        sudo docker rm -f server-golang || true
+                        sudo docker network create dev || true
+                        sudo docker container run -d --rm --name server-golang -p 4001:4001 --network dev ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    '''
+                }
             }
         }
     }
@@ -104,6 +109,3 @@ pipeline {
         }
     }
 }
-
-// token tele : 7801299262:AAFTUsvVxL59EzZHQfAcdLYOgb4kK5B42Fg
-// id : 6894773989

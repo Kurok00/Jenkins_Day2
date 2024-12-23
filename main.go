@@ -22,11 +22,9 @@ func main() {
 		})
 	})
 
-	if err := r.Run(":4000"); err != nil {
+	port := ":4001"  // Match the port with Jenkins deployment
+	if err := r.Run(port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
-	log.Println("Server is running at http://localhost:4000")
+	log.Printf("Server is running at http://localhost%s", port)
 }
-
-// token tele : 7801299262:AAFTUsvVxL59EzZHQfAcdLYOgb4kK5B42Fg
-// id : 6894773989
