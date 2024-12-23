@@ -4,8 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'anvnt96/golang-jenkins'
         DOCKER_TAG = 'latest'
-        TELEGRAM_TOKEN = credentials('telegram-bot-token')
-        TELEGRAM_CHAT = credentials('telegram-chat-id')
     }
 
     stages {
@@ -67,29 +65,39 @@ pipeline {
 
     post {
         success {
-            node('built-in') {  // Add label 'built-in' for the default Jenkins node
+            node('built-in') {
                 script {
-                    def message = "✅ Build SUCCESS!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
-                    sh """
-                        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
-                        -d chat_id=${TELEGRAM_CHAT} \
-                        -d parse_mode=HTML \
-                        -d text="${message}"
-                    """
+                    withCredentials([
+                        string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN'),
+                        string(credentialsId: 'telegram-chat-id', variable: 'TELEGRAM_CHAT')
+                    ]) {
+                        def message = "✅ Build SUCCESS!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
+                        sh """
+                            curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+                            -d chat_id=${TELEGRAM_CHAT} \
+                            -d parse_mode=HTML \
+                            -d text="${message}"
+                        """
+                    }
                 }
                 cleanWs()
             }
         }
         failure {
-            node('built-in') {  // Add label 'built-in' for the default Jenkins node
+            node('built-in') {
                 script {
-                    def message = "❌ Build FAILED!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
-                    sh """
-                        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
-                        -d chat_id=${TELEGRAM_CHAT} \
-                        -d parse_mode=HTML \
-                        -d text="${message}"
-                    """
+                    withCredentials([
+                        string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN'),
+                        string(credentialsId: 'telegram-chat-id', variable: 'TELEGRAM_CHAT')
+                    ]) {
+                        def message = "❌ Build FAILED!\nJob: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBuild URL: ${env.BUILD_URL}"
+                        sh """
+                            curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+                            -d chat_id=${TELEGRAM_CHAT} \
+                            -d parse_mode=HTML \
+                            -d text="${message}"
+                        """
+                    }
                 }
                 cleanWs()
             }
