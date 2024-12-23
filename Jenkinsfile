@@ -1,53 +1,57 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = 'anvnt96/golang-jenkins-day2'
+        DOCKER_TAG = 'latest'
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                // Checkout the code from the repository
-                git 'https://github.com/Kurok00/Jenkins_Day2.git'
+                git branch: 'master', url: 'https://github.com/Kurok00/Jenkins_Day2.git'
             }
         }
-        stage('Build') {
-            agent {
-                docker {
-                    image 'golang:1.23.3-alpine'
-                    args '-v /var/jenkins_home/go:/go'
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
                 }
             }
+        }
+
+        stage('Run Tests') {
             steps {
-                // Build the Go application
-                sh 'go build -o main .'
+                echo 'Running tests...'
             }
         }
-        stage('Test') {
-            agent {
-                docker {
-                    image 'golang:1.23.3-alpine'
-                    args '-v /var/jenkins_home/go:/go'
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
+                    }
                 }
             }
-            steps {
-                // Run tests
-                sh 'go test ./...'
-            }
         }
-        stage('Docker Build') {
+
+        stage('Deploy Golang to DEV') {
             steps {
-                // Build the Docker image
-                sh 'docker build -t your-image-name .'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                // Deploy the Docker image
-                sh 'docker run -d -p 4001:4001 your-image-name'
+                echo 'Deploying to DEV...'
+                sh 'docker image pull anvnt96/golang-jenkins-day2'
+                sh 'docker container stop golang-jenkins-day2 || echo "this container does not exist"'
+                sh 'docker network create dev || echo "this network exists"'
+                sh 'echo y | docker container prune '
+
+                sh 'docker container run -d --rm --name server-golang -p 4001:4001 --network dev anvnt96/golang-jenkins-day2'
             }
         }
     }
+
     post {
         always {
-            // Clean up workspace
             cleanWs()
         }
     }
